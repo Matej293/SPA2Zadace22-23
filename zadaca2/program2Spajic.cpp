@@ -1,101 +1,111 @@
 #include <iostream>
-#include <list>
-#include <random>
 #include <vector>
-#include <ctime>
+#include <cmath>
 
 using namespace std;
 
-vector<int> get_digits(int num) {
-    vector<int> digits;
+struct Database {
+    Database(int m);
 
-    if (num == 0)
-        return {0};
+    vector<bool> container;
 
-    while (num > 0) {
-        digits.push_back(num % 10);
-        num /= 10;
-    }
-    return digits;
+    int h1(const string& s);
+    int h2(const string& s);
+    int h3(const string& s);
+    int h4(const string& s);
+
+    void insert(const string& username);
+    string search(const string &username);
 };
 
-template<typename V>
-struct HashTable {
-    HashTable();
-
-    vector<list<pair<int, V>>> container;
-    vector<int> rand_vars;
-
-    void insert(int key, V value);
-    pair<int, V> search(int key);
-
-    int hash(int key);
-};
-
-template<typename V>
-HashTable<V>::HashTable() {
-    default_random_engine generator(time(nullptr));
-    uniform_int_distribution<int> distribute(0, 6);
-
-    for (int i = 0; i < 7; ++i)
-        rand_vars.push_back(distribute(generator));
-
-    container.resize(7);
+Database::Database(int m) {
+    container.resize(m, false);
 }
 
-template<typename V>
-int HashTable<V>::hash(int key) {
-    vector<int> digits = get_digits(key);
-    int sum = 0;
+int Database::h1(const string &s) {
+    unsigned long long sum = 0;
+    int m = container.size();
+    for (int i = 0; i < s.size(); ++i)
+        sum += s[i] % m;
 
-    for (int i = 0; i < digits.size(); ++i)
-        sum += rand_vars[i] * digits[i];
-
-    return sum % 7;
+    return sum % m;
 }
 
-template<typename V>
-void HashTable<V>::insert(int key, V value) {
-    int k = hash(key);
+int Database::h2(const string &s) {
+    unsigned long long sum = 0;
+    int m = container.size();
+    for (int i = 0; i < s.size(); ++i)
+        sum += (s[i] * int(pow(19, i))) % m;
 
-    auto it = find_if(container[k].begin(), container[k].end(), [&key](const auto &p){ return p.first == key; });
-    if (it != container[k].end())
-        it->second = value;
-    else
-        container[k].push_front({key, value});
+    return (1 + sum) % m;
 }
 
-template<typename V>
-pair<int, V> HashTable<V>::search(int key) {
-    int k = hash(key);
+int Database::h3(const string &s) {
+    unsigned long long sum = 0;
+    int m = container.size();
+    for (int i = 0; i < s.size(); ++i)
+        sum += (s[i] * int(pow(30, i))) % m;
 
-    auto it = find_if(container[k].begin(), container[k].end(), [&key](const auto &p){ return p.first == key; });
-    if (it == container[k].end()) {
-        cout << "Error: could not find element with key: " << key << '.';
-        return {};
-    }
-    else
-        return *it;
+    return (7 + sum) % m;
+}
+
+int Database::h4(const string &s) {
+    unsigned long long sum = 0;
+    int m = container.size();
+    for (int i = 0; i < s.size(); ++i)
+        sum += (s[i] * int(pow(3, i)) * int(pow(7, i))) % m;
+
+    return (3 + sum) % m;
+}
+
+void Database::insert(const string &username) {
+    container[h1(username)] = true;
+    container[h2(username)] = true;
+    container[h3(username)] = true;
+    container[h4(username)] = true;
+}
+
+string Database::search(const string &username) {
+    string fail = "Element nije u tablici.";
+    string succ = "Element je vjerojatno u tablici.";
+
+    if (!container[h1(username)])
+        return fail;
+    if (!container[h2(username)])
+        return fail;
+    if (!container[h3(username)])
+        return fail;
+    if (!container[h4(username)])
+        return fail;
+
+    return succ;
 }
 
 int main() {
-    HashTable<float> hashTable;
+    Database db(100);
 
-    vector<int> keys = {
-            43, 63, 73, 8, 48, 43, 88, 21, 88, 85, 58, 44, 30, 35, 19, 66, 96, 43, 2, 51, 73, 57,
-            2, 29, 11, 81, 15, 49, 82, 17, 13, 83, 32, 67, 99, 72, 73, 96, 55, 19, 18, 60, 74, 76,
-            3, 60, 75, 77, 81, 16, 31, 62, 18, 44, 23, 55, 64, 20, 86, 70, 100, 84, 99, 41, 68, 57
+    vector<string> names = {
+            "jopis107", "hstranput", "Matej293", "MateaCucman", "JosipCestar",
+            "lanamak", "DanijelaValjak", "filipuranjek", "domagojziros", "lsanic",
+            "TomislavVinkovic", "IvoSusac", "matej2810", "KresimirSecan",
+            "inespejic", "InesSimunovic", "IvanFrantal", "Frle001", "inesstrapac",
+            "mkolak", "Dpritisa", "istvavk", "mtoldi", "lbrodar5", "mkristic",
+            "andreamatasovic", "balentovicanja", "IvanaVinkovic", "prakidzija",
+            "DMV1204", "JMesaric", "KarloKampic", "jurick1910", "LarisaDarojkovic"
     };
 
-    float value = 0.0f;
-    for (auto key : keys) {
-        hashTable.insert(key, value);
-        value += 0.1f;
-    }
+    for (auto name : names)
+        db.insert(name);
 
-    pair<int, float> p = hashTable.search(63);
 
-    cout << p.first << ", " << p.second << endl;
+    cout << db.search("matej293") << endl;
+    cout << db.search("Matej293") << endl;
+    cout << db.search("matej") << endl;
+    cout << db.search("anjabalentovic") << endl;
+    cout << db.search("larisada") << endl;
+    cout << db.search("BraneBB") << endl;
+    cout << db.search("IvoSusac") << endl;
+
 
     return 0;
 }
